@@ -28,8 +28,8 @@ del_idx = int(params.get('del_idx', [None])[0]) if 'del_idx' in params else None
 
 st.title("Referências Bibliográficas")
 
-# Formulário de inclusão de nova referência
-with st.expander("➕ Adicionar nova referência", expanded=True):
+# --- Formulário de inclusão de nova referência (agora inicialmente oculto) ---
+with st.expander("➕ Adicionar nova referência", expanded=False):
     cols1, cols2 = st.columns(2)
     db   = cols1.text_input("Base de Dados", key="new_db")
     auth = cols2.text_input("Autor(es)", key="new_auth")
@@ -43,62 +43,62 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         entry = dict(zip(COLS, [db, auth, yr, ttl, mtype, summ, res, rel]))
         pd.concat([df, pd.DataFrame([entry])], ignore_index=True).to_csv(CSV_FILE, index=False)
         st.success("Referência adicionada!")
+        # Após salvar, expander fecha novamente
         st.experimental_set_query_params()
         st.experimental_rerun()
 
 # Filtros principais
 st.markdown("---")
 st.subheader("Filtros de Busca")
-# Busca por título
 titulo_search = st.text_input("Buscar por Título")
-# Filtro por ano
 if not df['Ano'].dropna().empty:
     min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
 else:
     min_year, max_year = 2000, 2025
 if min_year > max_year:
     min_year, max_year = max_year, min_year
-filtro_ano = st.slider("Ano mínimo", min_year, max_year, min_year) if min_year < max_year else st.number_input("Ano mínimo", min_year, max_year, min_year)
-# Filtro por tipo de modelo
+filtro_ano = (
+    st.slider("Ano mínimo", min_year, max_year, min_year)
+    if min_year < max_year
+    else st.number_input("Ano mínimo", min_year, max_year, min_year)
+)
 tipos = df['Tipo de Modelo'].unique().tolist()
 filtro_tipo = st.multiselect("Tipos de Modelo", tipos)
 
-# Aplica filtros
 filtered = df.copy()
 filtered = filtered[filtered['Ano'] >= filtro_ano]
 if filtro_tipo:
     filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
 if titulo_search:
-    filtered = filtered[filtered['Título do Artigo']].str.contains(titulo_search, case=False, na=False)
-    filtered = df[filtered]  # apply mask to original df copy filter
+    mask = df['Título do Artigo'].str.contains(titulo_search, case=False, na=False)
+    filtered = df[mask]
 
 st.subheader("Lista de Referências")
 
-# Renderiza tabela HTML com scroll e truncamento
 if filtered.empty:
     st.info("Nenhuma referência cadastrada.")
 else:
     table_html = ['<div style="overflow-x:auto; overflow-y:auto; max-height:400px; border:1px solid #ddd;">']
     table_html.append('<table style="border-collapse: collapse; width:100%;">')
-    # Cabeçalho
     table_html.append('<thead><tr>')
     for col in COLS:
         table_html.append(f'<th style="border:1px solid #ccc; padding:6px; min-width:120px; white-space:nowrap;">{col}</th>')
     table_html.append('<th style="border:1px solid #ccc; padding:6px;">Editar</th><th style="border:1px solid #ccc; padding:6px;">Excluir</th>')
     table_html.append('</tr></thead><tbody>')
-    # Linhas
     for i, row in filtered.iterrows():
         table_html.append('<tr>')
         for col in COLS:
             val = truncate(row[col], 50)
-            table_html.append(f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{val}</td>')
+            table_html.append(
+                f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; '
+                'white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{val}</td>'
+            )
         table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?edit_idx={i}">✏️</a></td>')
         table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?del_idx={i}">🗑️</a></td>')
         table_html.append('</tr>')
     table_html.append('</tbody></table></div>')
     st.markdown(''.join(table_html), unsafe_allow_html=True)
 
-# Fluxo de edição
 if edit_idx is not None:
     rec = df.loc[edit_idx]
     st.warning(f'Editando registro {edit_idx} - "{rec["Título do Artigo"]}"')
@@ -122,7 +122,6 @@ if edit_idx is not None:
         st.experimental_set_query_params()
         st.experimental_rerun()
 
-# Fluxo de exclusão
 if del_idx is not None:
     rec = df.loc[del_idx]
     st.error(f'Deseja excluir registro {del_idx} - "{rec["Título do Artigo"]}"?')
@@ -136,6 +135,5 @@ if del_idx is not None:
         st.experimental_set_query_params()
         st.experimental_rerun()
 
-# Botão de download CSV
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Baixar planilha CSV", data=csv_data, file_name='references.csv', mime='text/csv')
