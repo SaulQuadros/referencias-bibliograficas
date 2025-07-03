@@ -1,0 +1,9 @@
+# Banco SQLite local
+references.db
+*.db
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
