@@ -51,14 +51,14 @@ filtered = df[df['Ano'] >= filtro_ano]
 if filtro_tipo:
     filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
 if titulo_search:
-    filtered = filtered[filtered['Título do Artigo']].str.contains(titulo_search, case=False, na=False)
+    filtered = filtered[filtered['Título do Artigo'].str.contains(titulo_search, case=False, na=False)]
 
 # Formulário de inclusão de nova referência
 with st.expander("➕ Adicionar nova referência", expanded=True):
     cols1, cols2 = st.columns(2)
     db   = cols1.text_input("Base de Dados", key="new_db")
     auth = cols2.text_input("Autor(es)", key="new_auth")
-    yr   = cols1.number_input("Ano", 1900, 2100, key="new_yr")
+    yr   = cols1.number_input("Ano", min_value=1900, max_value=2100, key="new_yr")
     ttl  = cols2.text_input("Título do Artigo", key="new_ttl")
     mtype= st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], key="new_mtype")
     summ = st.text_area("Resumo da Abordagem", key="new_summ")
@@ -105,7 +105,7 @@ if edit_idx is not None:
     db_e, auth_e, yr_e, ttl_e, mtype_e, summ_e, res_e, rel_e = [rec[c] for c in COLS]
     db_e = st.text_input("Base de Dados", value=db_e)
     auth_e = st.text_input("Autor(es)", value=auth_e)
-    yr_e = st.number_input("Ano", 1900, 2100, value=int(yr_e))
+    yr_e = st.number_input("Ano", min_value=1900, max_value=2100, value=int(yr_e))
     ttl_e = st.text_input("Título do Artigo", value=ttl_e)
     mtype_e = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(mtype_e))
     summ_e = st.text_area("Resumo da Abordagem", value=summ_e)
