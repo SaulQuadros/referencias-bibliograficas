@@ -1,6 +1,6 @@
-
 import streamlit as st
 import pandas as pd
+import io
 from db import get_all, insert, update, delete
 
 st.title("Referências Bibliográficas")
@@ -11,6 +11,23 @@ if "edit_id" not in st.session_state:
 
 # Carrega todos os registros
 df = get_all()
+
+# Função para exportar DataFrame para Excel
+def to_excel(df: pd.DataFrame) -> bytes:
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        df.to_excel(writer, index=False, sheet_name="Referencias")
+        writer.save()
+    return output.getvalue()
+
+# Botão de download para Excel
+excel_bytes = to_excel(df)
+st.download_button(
+    label="📥 Exportar para Excel",
+    data=excel_bytes,
+    file_name="referencias.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
 
 # Formulário de inclusão de nova referência
 with st.expander("➕ Adicionar nova referência", expanded=True):
@@ -41,6 +58,7 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         }
         insert(record)
         st.success("Referência adicionada!")
+        st.experimental_rerun()
 
 # Fluxo de edição
 if st.session_state.edit_id is not None:
@@ -81,8 +99,10 @@ if st.session_state.edit_id is not None:
         update(rec_id, updated)
         st.success("Registro atualizado!")
         st.session_state.edit_id = None
+        st.experimental_rerun()
     if cancel:
         st.session_state.edit_id = None
+        st.experimental_rerun()
 
 # Listagem de referências
 st.subheader("Lista de Referências")
