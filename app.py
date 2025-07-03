@@ -8,7 +8,8 @@ CSV_FILE = 'references.csv'
 if not os.path.exists(CSV_FILE):
     df_init = pd.DataFrame(columns=[
         "Base de Dados", "Autor(es)", "Ano", "Título do Artigo",
-        "Tipo de Modelo", "Resumo da Abordagem", "Principais Resultados"
+        "Tipo de Modelo", "Resumo da Abordagem", "Principais Resultados",
+        "Relevância e Uso"
     ])
     df_init.to_csv(CSV_FILE, index=False)
 
@@ -19,7 +20,8 @@ except Exception as e:
     st.error(f"Erro ao ler {CSV_FILE}: {e}")
     df = pd.DataFrame(columns=[
         "Base de Dados", "Autor(es)", "Ano", "Título do Artigo",
-        "Tipo de Modelo", "Resumo da Abordagem", "Principais Resultados"
+        "Tipo de Modelo", "Resumo da Abordagem", "Principais Resultados",
+        "Relevância e Uso"
     ])
 
 # Ensure 'Ano' is numeric
@@ -45,7 +47,6 @@ if min_year < max_year:
         "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
     )
 else:
-    # Se não há variação, usamos number_input fixo
     filtro_ano = st.sidebar.number_input(
         "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
     )
@@ -71,6 +72,7 @@ with st.expander("➕ Adicionar nova referência"):
     mtype= st.selectbox("Tipo de Modelo", ["Empírico", "Regressão", "ANN", "GA", "GEP", "Outros"])
     summ = st.text_area("Resumo da Abordagem")
     res  = st.text_area("Principais Resultados")
+    rel  = st.text_area("Relevância e Uso")
     if st.button("Salvar Referência"):
         try:
             new_entry = {
@@ -80,7 +82,8 @@ with st.expander("➕ Adicionar nova referência"):
                 "Título do Artigo": ttl,
                 "Tipo de Modelo": mtype,
                 "Resumo da Abordagem": summ,
-                "Principais Resultados": res
+                "Principais Resultados": res,
+                "Relevância e Uso": rel
             }
             df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
             df.to_csv(CSV_FILE, index=False)

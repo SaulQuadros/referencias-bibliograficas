@@ -4,7 +4,15 @@ Este aplicativo Streamlit organiza referências bibliográficas relacionadas ao 
 
 ## Funcionalidades
 
-- Adicionar novas referências com campos de base de dados, autor, ano, título, tipo de modelo, resumo e resultados.
+- Adicionar novas referências com campos de:
+  - Base de Dados
+  - Autor(es)
+  - Ano
+  - Título do Artigo
+  - Tipo de Modelo
+  - Resumo da Abordagem
+  - Principais Resultados
+  - **Relevância e Uso** (descrição de importância e tipo de uso da fonte)
 - Filtrar referências por ano mínimo e tipo de modelo.
 - Visualizar e baixar a planilha CSV atualizada.
 
