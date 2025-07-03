@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import os
@@ -68,9 +69,10 @@ filtered = df.copy()
 filtered = filtered[filtered['Ano'] >= filtro_ano]
 if filtro_tipo:
     filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
+# Corrigido: aplicar máscara booleana no DataFrame filtered
 if titulo_search:
-    filtered = filtered[filtered['Título do Artigo']].str.contains(titulo_search, case=False, na=False)
-    filtered = df[filtered]  # apply mask to original df copy filter
+    mask = filtered['Título do Artigo'].str.contains(titulo_search, case=False, na=False)
+    filtered = filtered[mask]
 
 st.subheader("Lista de Referências")
 
@@ -92,8 +94,8 @@ else:
         for col in COLS:
             val = truncate(row[col], 50)
             table_html.append(f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{val}</td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?edit_idx={i}">✏️</a></td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?del_idx={i}">🗑️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?edit_idx={i}\">✏️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?del_idx={i}\">🗑️</a></td>')
         table_html.append('</tr>')
     table_html.append('</tbody></table></div>')
     st.markdown(''.join(table_html), unsafe_allow_html=True)
