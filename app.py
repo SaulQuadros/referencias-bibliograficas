@@ -10,71 +10,31 @@ COLS = [
 ]
 
 def load_data():
-    # Cria CSV com colunas padrão se não existir
     if not os.path.exists(CSV_FILE):
-        df_init = pd.DataFrame(columns=COLS)
-        df_init.to_csv(CSV_FILE, index=False)
-    # Carrega dados
+        pd.DataFrame(columns=COLS).to_csv(CSV_FILE, index=False)
     df = pd.read_csv(CSV_FILE)
-    # Garante que todas as colunas estejam presentes
-    df = df.reindex(columns=COLS)
-    # Preenche valores faltantes em "Relevância e Uso"
-    if 'Relevância e Uso' in df.columns:
-        df['Relevância e Uso'] = df['Relevância e Uso'].fillna('')
-    # Converte coluna Ano para numérico
-    df['Ano'] = pd.to_numeric(df['Ano'], errors='coerce')
+    df = df.reindex(columns=COLS).fillna('')
+    df['Ano'] = pd.to_numeric(df['Ano'], errors='coerce').fillna(0).astype(int)
     return df
 
 def save_data(df):
     df.to_csv(CSV_FILE, index=False)
 
-# Carrega o DataFrame
+# Inicialização
+st.title("Matriz de Leitura – Módulo de Resiliência")
 df = load_data()
 
-st.title("Matriz de Leitura – Módulo de Resiliência")
-
-# --- Filtros na barra lateral ---
-st.sidebar.header("Filtros de Visualização")
-if not df['Ano'].dropna().empty:
-    min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
-else:
-    min_year, max_year = 2000, 2025
-if min_year > max_year:
-    min_year, max_year = max_year, min_year
-
-# Slider ou campo único dependendo do intervalo
-if min_year < max_year:
-    filtro_ano = st.sidebar.slider(
-        "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
-    )
-else:
-    filtro_ano = st.sidebar.number_input(
-        "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
-    )
-
-tipos_disponiveis = df['Tipo de Modelo'].dropna().unique().tolist()
-filtro_tipo = st.sidebar.multiselect("Tipos de Modelo", tipos_disponiveis)
-
-# Aplica filtros
-df_filtered = df[df['Ano'] >= filtro_ano]
-if filtro_tipo:
-    df_filtered = df_filtered[df_filtered['Tipo de Modelo'].isin(filtro_tipo)]
-
-# Exibe tabela com altura fixa para ver pelo menos 5 registros
-st.subheader("Lista de Referências")
-st.dataframe(df_filtered, height=300)  # Ajuste de altura
-
-# --- Adicionar nova referência ---
-with st.expander("➕ Adicionar nova referência"):
-    db   = st.text_input("Base de Dados")
-    auth = st.text_input("Autor(es)")
-    yr   = st.number_input("Ano", min_value=1900, max_value=2100, step=1)
-    ttl  = st.text_input("Título do Artigo")
-    mtype= st.selectbox("Tipo de Modelo", ["Empírico", "Regressão", "ANN", "GA", "GEP", "Outros"])
-    summ = st.text_area("Resumo da Abordagem")
-    res  = st.text_area("Principais Resultados")
-    rel  = st.text_area("Relevância e Uso")
-    if st.button("Salvar Referência"):
+# Formulário de nova referência
+with st.expander("➕ Adicionar nova referência", expanded=True):
+    db   = st.text_input("Base de Dados", key="new_db")
+    auth = st.text_input("Autor(es)", key="new_auth")
+    yr   = st.number_input("Ano", min_value=1900, max_value=2100, step=1, key="new_yr")
+    ttl  = st.text_input("Título do Artigo", key="new_ttl")
+    mtype= st.selectbox("Tipo de Modelo", ["Empírico", "Regressão", "ANN", "GA", "GEP", "Outros"], key="new_mtype")
+    summ = st.text_area("Resumo da Abordagem", key="new_summ")
+    res  = st.text_area("Principais Resultados", key="new_res")
+    rel  = st.text_area("Relevância e Uso", key="new_rel")
+    if st.button("Salvar Referência", key="save_new"):
         new_entry = {
             "Base de Dados": db,
             "Autor(es)": auth,
@@ -85,50 +45,80 @@ with st.expander("➕ Adicionar nova referência"):
             "Principais Resultados": res,
             "Relevância e Uso": rel
         }
-        df_local = df.copy()
-        df_local = pd.concat([df_local, pd.DataFrame([new_entry])], ignore_index=True)
-        save_data(df_local)
-        st.success("Referência adicionada com sucesso! Atualize a página para ver a lista.")
+        df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
+        save_data(df)
+        st.success("Referência adicionada com sucesso!")
+        st.experimental_rerun()
 
-# --- Editar referência existente ---
-with st.expander("✏️ Editar referência existente"):
-    if not df.empty:
-        options = [
-            f"{i} - {str(row['Título do Artigo'])[:30]}..." 
-            for i, row in df.iterrows()
-        ]
-        selected = st.selectbox("Selecione o registro para editar", options)
-        idx = int(selected.split(" - ")[0])
-        record = df.loc[idx]
-        db_e   = st.text_input("Base de Dados", value=record.get("Base de Dados", ""))
-        auth_e = st.text_input("Autor(es)", value=record.get("Autor(es)", ""))
-        yr_e   = st.number_input("Ano", min_value=1900, max_value=2100, value=int(record['Ano']) if pd.notnull(record['Ano']) else min_year, step=1)
-        ttl_e  = st.text_input("Título do Artigo", value=record.get("Título do Artigo", ""))
-        model_types = ["Empírico", "Regressão", "ANN", "GA", "GEP", "Outros"]
-        default_idx = model_types.index(record.get("Tipo de Modelo","Empírico")) if record.get("Tipo de Modelo") in model_types else 0
-        mtype_e = st.selectbox("Tipo de Modelo", model_types, index=default_idx)
-        summ_e  = st.text_area("Resumo da Abordagem", value=record.get("Resumo da Abordagem", ""))
-        res_e   = st.text_area("Principais Resultados", value=record.get("Principais Resultados", ""))
-        rel_e   = st.text_area("Relevância e Uso", value=record.get("Relevância e Uso", ""))
-        if st.button("Salvar Alterações"):
-            df.at[idx, "Base de Dados"] = db_e
-            df.at[idx, "Autor(es)"]     = auth_e
-            df.at[idx, "Ano"]           = yr_e
-            df.at[idx, "Título do Artigo"] = ttl_e
-            df.at[idx, "Tipo de Modelo"] = mtype_e
-            df.at[idx, "Resumo da Abordagem"] = summ_e
-            df.at[idx, "Principais Resultados"] = res_e
-            df.at[idx, "Relevância e Uso"] = rel_e
+st.markdown("---")
+st.subheader("Lista de Referências")
+
+if df.empty:
+    st.info("Nenhuma referência cadastrada.")
+else:
+    # Exibe header
+    cols = st.columns([1,1,1,2,1,2,2,2,1,1])
+    for i, col_name in enumerate(COLS):
+        cols[i].markdown(f"**{col_name}**")
+    cols[-2].markdown("**Editar**")
+    cols[-1].markdown("**Excluir**")
+    # Exibe linhas
+    for idx, row in df.iterrows():
+        cols = st.columns([1,1,1,2,1,2,2,2,1,1])
+        cols[0].write(row["Base de Dados"])
+        cols[1].write(row["Autor(es)"])
+        cols[2].write(row["Ano"])
+        cols[3].write(row["Título do Artigo"])
+        cols[4].write(row["Tipo de Modelo"])
+        cols[5].write(row["Resumo da Abordagem"])
+        cols[6].write(row["Principais Resultados"])
+        cols[7].write(row["Relevância e Uso"])
+        # Botões de ação
+        if cols[8].button("✏️", key=f"edit_{idx}"):
+            st.session_state['edit_idx'] = idx
+        if cols[9].button("🗑️", key=f"del_{idx}"):
+            st.session_state['del_idx'] = idx
+
+    # Edição inline com confirmação
+    if 'edit_idx' in st.session_state:
+        i = st.session_state['edit_idx']
+        record = df.loc[i]
+        st.warning(f"Você está editando o registro {i} - "{record['Título do Artigo']}"")
+        db_e   = st.text_input("Base de Dados", value=record["Base de Dados"], key="edit_db")
+        auth_e = st.text_input("Autor(es)", value=record["Autor(es)"], key="edit_auth")
+        yr_e   = st.number_input("Ano", min_value=1900, max_value=2100, value=int(record["Ano"]), key="edit_yr")
+        ttl_e  = st.text_input("Título do Artigo", value=record["Título do Artigo"], key="edit_ttl")
+        mtype_e= st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(record["Tipo de Modelo"]), key="edit_mtype")
+        summ_e = st.text_area("Resumo da Abordagem", value=record["Resumo da Abordagem"], key="edit_summ")
+        res_e  = st.text_area("Principais Resultados", value=record["Principais Resultados"], key="edit_res")
+        rel_e  = st.text_area("Relevância e Uso", value=record["Relevância e Uso"], key="edit_rel")
+        if st.button("Confirmar Alteração", key="confirm_edit"):
+            df.at[i, COLS] = [db_e, auth_e, yr_e, ttl_e, mtype_e, summ_e, res_e, rel_e]
             save_data(df)
-            st.success("Referência atualizada com sucesso! Atualize a página para ver as mudanças.")
-    else:
-        st.info("Nenhuma referência disponível para edição.")
+            st.success("Registro alterado com sucesso!")
+            del st.session_state['edit_idx']
+            st.experimental_rerun()
+        if st.button("Cancelar Edição", key="cancel_edit"):
+            del st.session_state['edit_idx']
+            st.info("Edição cancelada.")
+            st.experimental_rerun()
+
+    # Exclusão inline com confirmação
+    if 'del_idx' in st.session_state:
+        i = st.session_state['del_idx']
+        record = df.loc[i]
+        st.error(f"Tem certeza que deseja excluir o registro {i} - "{record['Título do Artigo']}"? Esta ação é definitiva.")
+        if st.button("Sim, excluir", key="confirm_del"):
+            df = df.drop(i).reset_index(drop=True)
+            save_data(df)
+            st.success("Registro excluído com sucesso!")
+            del st.session_state['del_idx']
+            st.experimental_rerun()
+        if st.button("Cancelar Exclusão", key="cancel_del"):
+            del st.session_state['del_idx']
+            st.info("Exclusão cancelada.")
+            st.experimental_rerun()
 
 # Botão de download
 csv_data = df.to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="📥 Baixar planilha CSV",
-    data=csv_data,
-    file_name='references.csv',
-    mime='text/csv'
-)
+st.download_button("📥 Baixar planilha CSV", data=csv_data, file_name='references.csv', mime='text/csv')
