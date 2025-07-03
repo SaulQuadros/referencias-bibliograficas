@@ -6,6 +6,7 @@ import os
 CSV_FILE = 'references.csv'
 COLS = [
     "Base de Dados", "Autor(es)", "Ano", "Título do Artigo",
+    "Qualis", "JCR",
     "Tipo de Modelo", "Resumo da Abordagem", "Principais Resultados",
     "Relevância e Uso"
 ]
@@ -28,22 +29,23 @@ del_idx = int(params.get('del_idx', [None])[0]) if 'del_idx' in params else None
 
 st.title("Referências Bibliográficas")
 
-# --- Formulário de inclusão de nova referência (agora inicialmente oculto) ---
+# --- Formulário de inclusão de nova referência (inicialmente oculto) ---
 with st.expander("➕ Adicionar nova referência", expanded=False):
     cols1, cols2 = st.columns(2)
-    db   = cols1.text_input("Base de Dados", key="new_db")
-    auth = cols2.text_input("Autor(es)", key="new_auth")
-    yr   = cols1.number_input("Ano", min_value=1900, max_value=2100, key="new_yr")
-    ttl  = cols2.text_input("Título do Artigo", key="new_ttl")
-    mtype= st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], key="new_mtype")
-    summ = st.text_area("Resumo da Abordagem", key="new_summ")
-    res  = st.text_area("Principais Resultados", key="new_res")
-    rel  = st.text_area("Relevância e Uso", key="new_rel")
+    db     = cols1.text_input("Base de Dados", key="new_db")
+    auth   = cols2.text_input("Autor(es)", key="new_auth")
+    yr     = cols1.number_input("Ano", min_value=1900, max_value=2100, key="new_yr")
+    ttl    = cols2.text_input("Título do Artigo", key="new_ttl")
+    qualis = cols1.text_input("Qualis", key="new_qualis")
+    jcr    = cols2.text_input("JCR", key="new_jcr")
+    mtype  = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], key="new_mtype")
+    summ   = st.text_area("Resumo da Abordagem", key="new_summ")
+    res    = st.text_area("Principais Resultados", key="new_res")
+    rel    = st.text_area("Relevância e Uso", key="new_rel")
     if st.button("Salvar Referência", key="save_new"):
-        entry = dict(zip(COLS, [db, auth, yr, ttl, mtype, summ, res, rel]))
+        entry = dict(zip(COLS, [db, auth, yr, ttl, qualis, jcr, mtype, summ, res, rel]))
         pd.concat([df, pd.DataFrame([entry])], ignore_index=True).to_csv(CSV_FILE, index=False)
         st.success("Referência adicionada!")
-        # Após salvar, expander fecha novamente
         st.experimental_set_query_params()
         st.experimental_rerun()
 
@@ -101,19 +103,22 @@ else:
 
 if edit_idx is not None:
     rec = df.loc[edit_idx]
-    st.warning(f'Editando registro {edit_idx} - "{rec["Título do Artigo"]}"')
-    db_e, auth_e, yr_e, ttl_e, mtype_e, summ_e, res_e, rel_e = [rec[c] for c in COLS]
-    db_e = st.text_input("Base de Dados", value=db_e)
-    auth_e = st.text_input("Autor(es)", value=auth_e)
-    yr_e = st.number_input("Ano", min_value=1900, max_value=2100, value=int(yr_e))
-    ttl_e = st.text_input("Título do Artigo", value=ttl_e)
-    mtype_e = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(mtype_e))
-    summ_e = st.text_area("Resumo da Abordagem", value=summ_e)
-    res_e  = st.text_area("Principais Resultados", value=res_e)
-    rel_e  = st.text_area("Relevância e Uso", value=rel_e)
+    db_e, auth_e, yr_e, ttl_e, qualis_e, jcr_e, mtype_e, summ_e, res_e, rel_e = [rec[c] for c in COLS]
+    st.warning(f'Editando registro {edit_idx} - "{ttl_e}"')
+    cols1, cols2 = st.columns(2)
+    db_e     = cols1.text_input("Base de Dados", value=db_e)
+    auth_e   = cols2.text_input("Autor(es)", value=auth_e)
+    yr_e     = cols1.number_input("Ano", min_value=1900, max_value=2100, value=int(yr_e))
+    ttl_e    = cols2.text_input("Título do Artigo", value=ttl_e)
+    qualis_e = cols1.text_input("Qualis", value=qualis_e)
+    jcr_e    = cols2.text_input("JCR", value=jcr_e)
+    mtype_e  = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(mtype_e))
+    summ_e   = st.text_area("Resumo da Abordagem", value=summ_e)
+    res_e    = st.text_area("Principais Resultados", value=res_e)
+    rel_e    = st.text_area("Relevância e Uso", value=rel_e)
     col1, col2 = st.columns(2)
     if col1.button("Confirmar Alteração"):
-        df.at[edit_idx, COLS] = [db_e, auth_e, yr_e, ttl_e, mtype_e, summ_e, res_e, rel_e]
+        df.at[edit_idx, COLS] = [db_e, auth_e, yr_e, ttl_e, qualis_e, jcr_e, mtype_e, summ_e, res_e, rel_e]
         df.to_csv(CSV_FILE, index=False)
         st.success("Registro atualizado!")
         st.experimental_set_query_params()
