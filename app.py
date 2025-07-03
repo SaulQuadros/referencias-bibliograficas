@@ -39,9 +39,17 @@ else:
 if min_year > max_year:
     min_year, max_year = max_year, min_year
 
-filtro_ano = st.sidebar.slider(
-    "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
-)
+# Slider or fallback for filtro_ano
+if min_year < max_year:
+    filtro_ano = st.sidebar.slider(
+        "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
+    )
+else:
+    # Se não há variação, usamos number_input fixo
+    filtro_ano = st.sidebar.number_input(
+        "Ano mínimo", min_value=min_year, max_value=max_year, value=min_year
+    )
+
 tipos_disponiveis = df['Tipo de Modelo'].dropna().unique().tolist()
 filtro_tipo = st.sidebar.multiselect("Tipos de Modelo", tipos_disponiveis)
 
