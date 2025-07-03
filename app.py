@@ -10,6 +10,11 @@ COLS = [
     "Relevância e Uso"
 ]
 
+# Função para truncar texto com ellipsis
+def truncate(text, max_len):
+    txt = str(text)
+    return txt if len(txt) <= max_len else txt[:max_len-3] + "..."
+
 def load_data():
     if not os.path.exists(CSV_FILE):
         pd.DataFrame(columns=COLS).to_csv(CSV_FILE, index=False)
@@ -82,24 +87,25 @@ st.subheader("Lista de Referências")
 if filtered.empty:
     st.info("Nenhuma referência cadastrada.")
 else:
-    st.markdown('<div style="overflow-x:auto; overflow-y:auto; max-height:400px;">', unsafe_allow_html=True)
+    # Container scrollable
+    st.markdown('<div style="overflow-x:auto; overflow-y:auto; max-height:500px; border:1px solid #ddd; padding:10px;">', unsafe_allow_html=True)
     # Cabeçalhos
-    header_cols = st.columns([1,1,1,2,1,2,2,2,1,1])
+    header_cols = st.columns([1,1,1,3,1,3,3,3,1,1])
     for i, col_name in enumerate(COLS):
         header_cols[i].markdown(f"**{col_name}**")
     header_cols[-2].markdown("**Editar**")
     header_cols[-1].markdown("**Excluir**")
     # Linhas de dados
     for idx, row in filtered.iterrows():
-        row_cols = st.columns([1,1,1,2,1,2,2,2,1,1])
-        row_cols[0].write(row["Base de Dados"])
-        row_cols[1].write(row["Autor(es)"])
+        row_cols = st.columns([1,1,1,3,1,3,3,3,1,1])
+        row_cols[0].write(truncate(row["Base de Dados"], 15))
+        row_cols[1].write(truncate(row["Autor(es)"], 25))
         row_cols[2].write(row["Ano"])
-        row_cols[3].write(row["Título do Artigo"])
-        row_cols[4].write(row["Tipo de Modelo"])
-        row_cols[5].write(row["Resumo da Abordagem"])
-        row_cols[6].write(row["Principais Resultados"])
-        row_cols[7].write(row["Relevância e Uso"])
+        row_cols[3].write(truncate(row["Título do Artigo"], 40))
+        row_cols[4].write(truncate(row["Tipo de Modelo"], 10))
+        row_cols[5].write(truncate(row["Resumo da Abordagem"], 50))
+        row_cols[6].write(truncate(row["Principais Resultados"], 50))
+        row_cols[7].write(truncate(row["Relevância e Uso"], 50))
         # Botões de ação
         if row_cols[8].button("✏️", key=f"edit_{idx}"):
             st.session_state['edit_idx'] = idx
@@ -107,7 +113,7 @@ else:
             st.session_state['del_idx'] = idx
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Edição inline com confirmação
+    # Edição e exclusão inline seguem como antes...
     if 'edit_idx' in st.session_state:
         i = st.session_state['edit_idx']
         record = df.loc[i]
@@ -133,7 +139,6 @@ else:
             st.info("Edição cancelada.")
             st.experimental_rerun()
 
-    # Exclusão inline com confirmação
     if 'del_idx' in st.session_state:
         i = st.session_state['del_idx']
         record = df.loc[i]
