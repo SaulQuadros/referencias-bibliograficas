@@ -17,7 +17,7 @@ def to_excel(df: pd.DataFrame) -> bytes:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Referencias")
-        writer.save()
+        
     return output.getvalue()
 
 # Botão de download para Excel
