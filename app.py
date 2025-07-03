@@ -4,6 +4,10 @@ from db import get_all, insert, update, delete
 
 st.title("Referências Bibliográficas")
 
+# Initialize edit state
+if "edit_id" not in st.session_state:
+    st.session_state.edit_id = None
+
 # Carrega todos os registros
 df = get_all()
 
@@ -36,59 +40,25 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         }
         insert(record)
         st.success("Referência adicionada!")
-        st.set_query_params()
-
-# Exibir lista de referências
-st.subheader("Lista de Referências")
-if df.empty:
-    st.info("Nenhuma referência cadastrada.")
-else:
-    table_html = ['<div style="overflow-x:auto; overflow-y:auto; max-height:400px; border:1px solid #ddd;">']
-    table_html.append('<table style="border-collapse: collapse; width:100%;">')
-    table_html.append('<thead><tr>')
-    headers = ["ID", "Base de Dados", "Periódico", "Autor(es)", "Ano", "Título do Artigo",
-               "Qualis", "JCR", "Tipo de Modelo", "Resumo da Abordagem",
-               "Principais Resultados", "Relevância e Uso"]
-    for h in headers:
-        table_html.append(f'<th style="border:1px solid #ccc; padding:6px; min-width:120px; white-space:nowrap;">{h}</th>')
-    table_html.append('<th style="border:1px solid #ccc; padding:6px;">Editar</th><th style="border:1px solid #ccc; padding:6px;">Excluir</th>')
-    table_html.append('</tr></thead><tbody>')
-    for row in df.itertuples():
-        table_html.append('<tr>')
-        values = [row.id, row.base_de_dados, row.periodico, row.autores, row.ano,
-                  row.titulo_artigo, row.qualis, row.jcr, row.tipo_modelo,
-                  row.resumo_abordagem, row.principais_resultados, row.relevancia_uso]
-        for val in values:
-            txt = str(val)
-            truncated = txt if len(txt) <= 50 else txt[:47] + "..."
-            table_html.append(f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{truncated}</td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?edit_id={row.id}">✏️</a></td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?del_id={row.id}">🗑️</a></td>')
-        table_html.append('</tr>')
-    table_html.append('</tbody></table></div>')
-    st.markdown("".join(table_html), unsafe_allow_html=True)
-
-# Tratar parâmetros de edição/exclusão
-params = st.query_params
-edit_id = int(params.get("edit_id", [None])[0]) if "edit_id" in params else None
-del_id = int(params.get("del_id", [None])[0]) if "del_id" in params else None
+        st.experimental_rerun()
 
 # Fluxo de edição
-if edit_id is not None:
-    rec = df.loc[df["id"] == edit_id].iloc[0]
-    st.warning(f'Editando registro {edit_id} - "{rec["titulo_artigo"]}"')
+if st.session_state.edit_id is not None:
+    rec_id = st.session_state.edit_id
+    rec = df.loc[df["id"] == rec_id].iloc[0]
+    st.warning(f'Editando registro {rec_id} - "{rec["titulo_artigo"]}"')
     with st.form("edit_form"):
-        base_de_dados = st.text_input("Base de Dados", value=rec["base_de_dados"])
-        periodico = st.text_input("Periódico", value=rec["periodico"])
-        autores = st.text_input("Autor(es)", value=rec["autores"])
-        ano = st.number_input("Ano", min_value=1900, max_value=2100, value=int(rec["ano"]))
-        titulo_artigo = st.text_input("Título do Artigo", value=rec["titulo_artigo"])
-        qualis = st.text_input("Qualis", value=rec["qualis"])
-        jcr = st.text_input("JCR", value=rec["jcr"])
-        tipo_modelo = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(rec["tipo_modelo"]))
-        resumo_abordagem = st.text_area("Resumo da Abordagem", value=rec["resumo_abordagem"])
-        principais_resultados = st.text_area("Principais Resultados", value=rec["principais_resultados"])
-        relevancia_uso = st.text_area("Relevância e Uso", value=rec["relevancia_uso"])
+        base_de_dados = st.text_input("Base de Dados", value=rec["base_de_dados"], key="edit_base")
+        periodico = st.text_input("Periódico", value=rec["periodico"], key="edit_periodico")
+        autores = st.text_input("Autor(es)", value=rec["autores"], key="edit_autores")
+        ano = st.number_input("Ano", min_value=1900, max_value=2100, value=int(rec["ano"]), key="edit_ano")
+        titulo_artigo = st.text_input("Título do Artigo", value=rec["titulo_artigo"], key="edit_titulo")
+        qualis = st.text_input("Qualis", value=rec["qualis"], key="edit_qualis")
+        jcr = st.text_input("JCR", value=rec["jcr"], key="edit_jcr")
+        tipo_modelo = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(rec["tipo_modelo"]), key="edit_tipo")
+        resumo_abordagem = st.text_area("Resumo da Abordagem", value=rec["resumo_abordagem"], key="edit_resumo")
+        principais_resultados = st.text_area("Principais Resultados", value=rec["principais_resultados"], key="edit_resultados")
+        relevancia_uso = st.text_area("Relevância e Uso", value=rec["relevancia_uso"], key="edit_relevancia")
         confirm = st.form_submit_button("Confirmar Alteração")
         cancel = st.form_submit_button("Cancelar")
     if confirm:
@@ -105,24 +75,25 @@ if edit_id is not None:
             "principais_resultados": principais_resultados,
             "relevancia_uso": relevancia_uso
         }
-        update(edit_id, record)
+        update(rec_id, record)
         st.success("Registro atualizado!")
-        st.set_query_params()
+        st.session_state.edit_id = None
         st.experimental_rerun()
     if cancel:
-        st.set_query_params()
+        st.session_state.edit_id = None
         st.experimental_rerun()
 
-# Fluxo de exclusão
-if del_id is not None:
-    rec = df.loc[df["id"] == del_id].iloc[0]
-    st.error(f'Deseja excluir registro {del_id} - "{rec["titulo_artigo"]}"?')
-    col1, col2 = st.columns(2)
-    if col1.button("Sim, excluir"):
-        delete(del_id)
-        st.success("Registro excluído!")
-        st.set_query_params()
-        st.experimental_rerun()
-    if col2.button("Cancelar"):
-        st.set_query_params()
-        st.experimental_rerun()
+# Listagem de referências
+st.subheader("Lista de Referências")
+if df.empty:
+    st.info("Nenhuma referência cadastrada.")
+else:
+    for row in df.itertuples():
+        cols = st.columns([8, 1, 1])
+        cols[0].write(f'**{row.id}** | {row.autores} ({row.ano}) - {row.titulo_artigo}')
+        if cols[1].button("✏️", key=f"edit_{row.id}"):
+            st.session_state.edit_id = row.id
+        if cols[2].button("🗑️", key=f"delete_{row.id}"):
+            delete(row.id)
+            st.success("Registro excluído!")
+            st.experimental_rerun()
