@@ -52,7 +52,7 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         pd.concat([df, pd.DataFrame([entry])], ignore_index=True).to_csv(CSV_FILE, index=False)
         st.success("Referência adicionada!")
         # limpa parâmetros de query antes de recarregar
-        st.query_params = {}
+        st.set_query_params()
         st.experimental_rerun()
 
 # Filtros principais
@@ -126,10 +126,10 @@ if edit_idx is not None:
         df.at[edit_idx, COLS] = [db_e, periodico_e, auth_e, yr_e, ttl_e, qualis_e, jcr_e, mtype_e, summ_e, res_e, rel_e]
         df.to_csv(CSV_FILE, index=False)
         st.success("Registro atualizado!")
-        st.query_params = {}
+        st.set_query_params()
         st.experimental_rerun()
     if col2.button("Cancelar"):
-        st.query_params = {}
+        st.set_query_params()
         st.experimental_rerun()
 
 # Fluxo de exclusão
@@ -140,10 +140,10 @@ if del_idx is not None:
     if col1.button("Sim, excluir"):
         df.drop(del_idx).reset_index(drop=True).to_csv(CSV_FILE, index=False)
         st.success("Registro excluído!")
-        st.query_params = {}
+        st.set_query_params()
         st.experimental_rerun()
     if col2.button("Cancelar"):
-        st.query_params = {}
+        st.set_query_params()
         st.experimental_rerun()
 
 # Botão de download CSV
