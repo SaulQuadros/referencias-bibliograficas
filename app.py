@@ -28,31 +28,6 @@ del_idx = int(params.get('del_idx', [None])[0]) if 'del_idx' in params else None
 
 st.title("Referências Bibliográficas")
 
-# Filtros na sidebar
-st.sidebar.header("Filtros de Visualização")
-titulo_search = st.sidebar.text_input("Título")
-if not df['Ano'].dropna().empty:
-    min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
-else:
-    min_year, max_year = 2000, 2025
-if min_year > max_year:
-    min_year, max_year = max_year, min_year
-
-if min_year < max_year:
-    filtro_ano = st.sidebar.slider("Ano mínimo", min_year, max_year, min_year)
-else:
-    filtro_ano = st.sidebar.number_input("Ano mínimo", min_year, max_year, min_year)
-
-tipos = df['Tipo de Modelo'].unique().tolist()
-filtro_tipo = st.sidebar.multiselect("Tipos de Modelo", tipos)
-
-# Aplica filtros
-filtered = df[df['Ano'] >= filtro_ano]
-if filtro_tipo:
-    filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
-if titulo_search:
-    filtered = filtered[filtered['Título do Artigo'].str.contains(titulo_search, case=False, na=False)]
-
 # Formulário de inclusão de nova referência
 with st.expander("➕ Adicionar nova referência", expanded=True):
     cols1, cols2 = st.columns(2)
@@ -71,7 +46,32 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         st.experimental_set_query_params()
         st.experimental_rerun()
 
+# Filtros principais
 st.markdown("---")
+st.subheader("Filtros de Busca")
+# Busca por título
+titulo_search = st.text_input("Buscar por Título")
+# Filtro por ano
+if not df['Ano'].dropna().empty:
+    min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
+else:
+    min_year, max_year = 2000, 2025
+if min_year > max_year:
+    min_year, max_year = max_year, min_year
+filtro_ano = st.slider("Ano mínimo", min_year, max_year, min_year) if min_year < max_year else st.number_input("Ano mínimo", min_year, max_year, min_year)
+# Filtro por tipo de modelo
+tipos = df['Tipo de Modelo'].unique().tolist()
+filtro_tipo = st.multiselect("Tipos de Modelo", tipos)
+
+# Aplica filtros
+filtered = df.copy()
+filtered = filtered[filtered['Ano'] >= filtro_ano]
+if filtro_tipo:
+    filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
+if titulo_search:
+    filtered = filtered[filtered['Título do Artigo']].str.contains(titulo_search, case=False, na=False)
+    filtered = df[filtered]  # apply mask to original df copy filter
+
 st.subheader("Lista de Referências")
 
 # Renderiza tabela HTML com scroll e truncamento
@@ -92,8 +92,8 @@ else:
         for col in COLS:
             val = truncate(row[col], 50)
             table_html.append(f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{val}</td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?edit_idx={i}\">✏️</a></td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?del_idx={i}\">🗑️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?edit_idx={i}">✏️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?del_idx={i}">🗑️</a></td>')
         table_html.append('</tr>')
     table_html.append('</tbody></table></div>')
     st.markdown(''.join(table_html), unsafe_allow_html=True)
@@ -109,8 +109,8 @@ if edit_idx is not None:
     ttl_e = st.text_input("Título do Artigo", value=ttl_e)
     mtype_e = st.selectbox("Tipo de Modelo", ["Empírico","Regressão","ANN","GA","GEP","Outros"], index=["Empírico","Regressão","ANN","GA","GEP","Outros"].index(mtype_e))
     summ_e = st.text_area("Resumo da Abordagem", value=summ_e)
-    res_e = st.text_area("Principais Resultados", value=res_e)
-    rel_e = st.text_area("Relevância e Uso", value=rel_e)
+    res_e  = st.text_area("Principais Resultados", value=res_e)
+    rel_e  = st.text_area("Relevância e Uso", value=rel_e)
     col1, col2 = st.columns(2)
     if col1.button("Confirmar Alteração"):
         df.at[edit_idx, COLS] = [db_e, auth_e, yr_e, ttl_e, mtype_e, summ_e, res_e, rel_e]
