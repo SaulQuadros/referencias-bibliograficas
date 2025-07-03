@@ -53,7 +53,6 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         st.success("Referência adicionada!")
         # limpa parâmetros de query antes de recarregar
         st.experimental_set_query_params()
-        st.experimental_rerun()
 
 # Filtros principais
 st.markdown("---")
@@ -127,10 +126,8 @@ if edit_idx is not None:
         df.to_csv(CSV_FILE, index=False)
         st.success("Registro atualizado!")
         st.experimental_set_query_params()
-        st.experimental_rerun()
     if col2.button("Cancelar"):
         st.experimental_set_query_params()
-        st.experimental_rerun()
 
 # Fluxo de exclusão
 if del_idx is not None:
@@ -141,10 +138,8 @@ if del_idx is not None:
         df.drop(del_idx).reset_index(drop=True).to_csv(CSV_FILE, index=False)
         st.success("Registro excluído!")
         st.experimental_set_query_params()
-        st.experimental_rerun()
     if col2.button("Cancelar"):
         st.experimental_set_query_params()
-        st.experimental_rerun()
 
 # Botão de download CSV
 csv_data = df.to_csv(index=False).encode('utf-8')
