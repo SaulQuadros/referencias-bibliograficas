@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 import streamlit as st
 import pandas as pd
 import os
@@ -28,7 +22,7 @@ df = pd.read_csv(CSV_FILE).reindex(columns=COLS).fillna('')
 df['Ano'] = pd.to_numeric(df['Ano'], errors='coerce').fillna(0).astype(int)
 
 # Verifica parâmetros de query para edição/exclusão
-params = st.experimental_get_query_params()
+params = st.query_params
 edit_idx = int(params.get('edit_idx', [None])[0]) if 'edit_idx' in params else None
 del_idx = int(params.get('del_idx', [None])[0]) if 'del_idx' in params else None
 
@@ -145,4 +139,3 @@ if del_idx is not None:
 # Botão de download CSV
 csv_data = df.to_csv(index=False).encode('utf-8')
 st.download_button("📥 Baixar planilha CSV", data=csv_data, file_name='references.csv', mime='text/csv')
-
