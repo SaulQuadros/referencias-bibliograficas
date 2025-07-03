@@ -26,10 +26,11 @@ params = st.experimental_get_query_params()
 edit_idx = int(params.get('edit_idx', [None])[0]) if 'edit_idx' in params else None
 del_idx = int(params.get('del_idx', [None])[0]) if 'del_idx' in params else None
 
-st.title("Matriz de Leitura – Módulo de Resiliência")
+st.title("Referências Bibliográficas")
 
 # Filtros na sidebar
 st.sidebar.header("Filtros de Visualização")
+titulo_search = st.sidebar.text_input("Título")
 if not df['Ano'].dropna().empty:
     min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
 else:
@@ -49,6 +50,8 @@ filtro_tipo = st.sidebar.multiselect("Tipos de Modelo", tipos)
 filtered = df[df['Ano'] >= filtro_ano]
 if filtro_tipo:
     filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
+if titulo_search:
+    filtered = filtered[filtered['Título do Artigo']].str.contains(titulo_search, case=False, na=False)
 
 # Formulário de inclusão de nova referência
 with st.expander("➕ Adicionar nova referência", expanded=True):
@@ -89,8 +92,8 @@ else:
         for col in COLS:
             val = truncate(row[col], 50)
             table_html.append(f'<td style="border:1px solid #ddd; padding:6px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{val}</td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?edit_idx={i}">✏️</a></td>')
-        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href="?del_idx={i}">🗑️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?edit_idx={i}\">✏️</a></td>')
+        table_html.append(f'<td style="border:1px solid #ddd; padding:6px; text-align:center;"><a href=\"?del_idx={i}\">🗑️</a></td>')
         table_html.append('</tr>')
     table_html.append('</tbody></table></div>')
     st.markdown(''.join(table_html), unsafe_allow_html=True)
