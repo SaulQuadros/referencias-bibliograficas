@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import os
@@ -20,11 +21,35 @@ def load_data():
 def save_data(df):
     df.to_csv(CSV_FILE, index=False)
 
-# Inicialização
+# Título da aplicação
 st.title("Matriz de Leitura – Módulo de Resiliência")
+
+# Carrega dados
 df = load_data()
 
-# Formulário de nova referência
+# --- Ferramentas de busca (filtros) ---
+st.sidebar.header("Filtros de Visualização")
+if not df['Ano'].dropna().empty:
+    min_year, max_year = int(df['Ano'].min()), int(df['Ano'].max())
+else:
+    min_year, max_year = 2000, 2025
+if min_year > max_year:
+    min_year, max_year = max_year, min_year
+
+if min_year < max_year:
+    filtro_ano = st.sidebar.slider("Ano mínimo", min_value=min_year, max_value=max_year, value=min_year)
+else:
+    filtro_ano = st.sidebar.number_input("Ano mínimo", min_value=min_year, max_value=max_year, value=min_year)
+
+tipos_disponiveis = df['Tipo de Modelo'].dropna().unique().tolist()
+filtro_tipo = st.sidebar.multiselect("Tipos de Modelo", tipos_disponiveis)
+
+# Aplica filtros
+filtered = df[df['Ano'] >= filtro_ano]
+if filtro_tipo:
+    filtered = filtered[filtered['Tipo de Modelo'].isin(filtro_tipo)]
+
+# --- Formulário de nova referência ---
 with st.expander("➕ Adicionar nova referência", expanded=True):
     db   = st.text_input("Base de Dados", key="new_db")
     auth = st.text_input("Autor(es)", key="new_auth")
@@ -45,39 +70,42 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
             "Principais Resultados": res,
             "Relevância e Uso": rel
         }
-        df = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
-        save_data(df)
+        df2 = pd.concat([df, pd.DataFrame([new_entry])], ignore_index=True)
+        save_data(df2)
         st.success("Referência adicionada com sucesso!")
         st.experimental_rerun()
 
 st.markdown("---")
 st.subheader("Lista de Referências")
 
-if df.empty:
+# Exibe a lista em uma caixa com rolagem
+if filtered.empty:
     st.info("Nenhuma referência cadastrada.")
 else:
-    # Exibe header
-    cols = st.columns([1,1,1,2,1,2,2,2,1,1])
+    st.markdown('<div style="overflow-x:auto; overflow-y:auto; max-height:400px;">', unsafe_allow_html=True)
+    # Cabeçalhos
+    header_cols = st.columns([1,1,1,2,1,2,2,2,1,1])
     for i, col_name in enumerate(COLS):
-        cols[i].markdown(f"**{col_name}**")
-    cols[-2].markdown("**Editar**")
-    cols[-1].markdown("**Excluir**")
-    # Exibe linhas
-    for idx, row in df.iterrows():
-        cols = st.columns([1,1,1,2,1,2,2,2,1,1])
-        cols[0].write(row["Base de Dados"])
-        cols[1].write(row["Autor(es)"])
-        cols[2].write(row["Ano"])
-        cols[3].write(row["Título do Artigo"])
-        cols[4].write(row["Tipo de Modelo"])
-        cols[5].write(row["Resumo da Abordagem"])
-        cols[6].write(row["Principais Resultados"])
-        cols[7].write(row["Relevância e Uso"])
+        header_cols[i].markdown(f"**{col_name}**")
+    header_cols[-2].markdown("**Editar**")
+    header_cols[-1].markdown("**Excluir**")
+    # Linhas de dados
+    for idx, row in filtered.iterrows():
+        row_cols = st.columns([1,1,1,2,1,2,2,2,1,1])
+        row_cols[0].write(row["Base de Dados"])
+        row_cols[1].write(row["Autor(es)"])
+        row_cols[2].write(row["Ano"])
+        row_cols[3].write(row["Título do Artigo"])
+        row_cols[4].write(row["Tipo de Modelo"])
+        row_cols[5].write(row["Resumo da Abordagem"])
+        row_cols[6].write(row["Principais Resultados"])
+        row_cols[7].write(row["Relevância e Uso"])
         # Botões de ação
-        if cols[8].button("✏️", key=f"edit_{idx}"):
+        if row_cols[8].button("✏️", key=f"edit_{idx}"):
             st.session_state['edit_idx'] = idx
-        if cols[9].button("🗑️", key=f"del_{idx}"):
+        if row_cols[9].button("🗑️", key=f"del_{idx}"):
             st.session_state['del_idx'] = idx
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Edição inline com confirmação
     if 'edit_idx' in st.session_state:
