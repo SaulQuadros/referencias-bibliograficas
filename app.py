@@ -17,7 +17,7 @@ def to_excel(df: pd.DataFrame) -> bytes:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Referencias")
-        
+
     return output.getvalue()
 
 # Botão de download para Excel
@@ -58,7 +58,7 @@ with st.expander("➕ Adicionar nova referência", expanded=True):
         }
         insert(record)
         st.success("Referência adicionada!")
-        st.experimental_rerun()
+        st.rerun()
 
 # Fluxo de edição
 if st.session_state.edit_id is not None:
@@ -99,10 +99,10 @@ if st.session_state.edit_id is not None:
         update(rec_id, updated)
         st.success("Registro atualizado!")
         st.session_state.edit_id = None
-        st.experimental_rerun()
+        st.rerun()
     if cancel:
         st.session_state.edit_id = None
-        st.experimental_rerun()
+        st.rerun()
 
 # Listagem de referências
 st.subheader("Lista de Referências")
